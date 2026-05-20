@@ -1,24 +1,3 @@
-# Claude Desktop Prompts
-
-Slash commands are a Claude Code feature. Claude Desktop doesn't have them — but it has the same SearchAtlas MCP, so the same workflows are one paste away.
-
-Every prompt below is **output-faithful** with its slash command: same tool calls, same chat render, same deliverables (HTML reports, brand-profile files, SA Report Builder reports). Where the slash command writes files, the Desktop prompt asks for the same content rendered as a code block or artifact you can copy and save manually (or, if you have a Filesystem MCP wired up, written directly).
-
-**How to use:** copy a prompt, paste it into Claude Desktop, fill in the placeholders (`{domain}`, `{client_slug}`, etc.), and send.
-
----
-
-## Setup
-
-Run the universal installer once. It auto-detects Claude Desktop and writes the MCP config to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/search-atlas-group/amm-toolkit/main/Scripts/install-mcp.sh | bash
-```
-
-Restart Claude Desktop. First tool call triggers OAuth — sign into SearchAtlas, approve, done.
-
----
 
 ## Account overview — replaces `/my-account`
 
