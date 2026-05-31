@@ -1,0 +1,111 @@
+# Workflow Template: Local SEO Heatmap Maintenance
+# Read-only — pull latest snapshot and report deltas. SA dashboard handles weekly refresh; toolkit does not duplicate it.
+# Copy to plans/clients/{client-slug}/{YYYY-MM}-heatmap-maintenance.yaml and fill in the variables.
+
+template: heatmap-maintenance
+version: "1.0"
+description: "Read latest heatmap snapshot, diff vs prior, surface top movers. Optional opt-in off-cycle refresh + competitor comparison."
+
+# ── Client Info ───────────────────────────────────────────────────────────────
+client: ""
+domain: ""
+period: ""                          # e.g. "2026-02"
+status: pending
+
+# ── IDs ───────────────────────────────────────────────────────────────────────
+ids:
+  business_id: ""                   # local_seo_heatmaps business id (int)
+
+# ── Configuration ─────────────────────────────────────────────────────────────
+config:
+  off_cycle_refresh: false          # set true ONLY for genuine off-cycle events (rebrand, new services)
+  competitor_report: false          # set true to include single_competitor_versus_report
+  competitor_business_ids: []       # list of competitor business ids to compare against
+  top_movers_count: 5               # how many top movers to surface in the report
+
+# ── Steps ─────────────────────────────────────────────────────────────────────
+steps:
+  - id: 1
+    name: "List heatmaps for this business"
+    tool: local_seo_heatmaps
+    operations:
+      - op: list_businesses_heatmaps
+        params:
+          business_id: "{{ids.business_id}}"
+    output: heatmaps
+    status: pending
+
+  - id: 2
+    name: "Latest snapshot detail"
+    tool: local_seo_heatmaps
+    operations:
+      - op: get_heatmap_details
+        params:
+          heatmap_id: "{{heatmap.id}}"        # iterate per heatmap
+    output: latest_snapshots
+    status: pending
+    depends_on: [1]
+
+  - id: 3
+    name: "Per-keyword rank"
+    tool: local_seo_heatmaps
+    operations:
+      - op: get_rank
+        params:
+          heatmap_id: "{{heatmap.id}}"        # iterate
+    output: rank_by_keyword
+    status: pending
+    depends_on: [1]
+
+  - id: 4
+    name: "Snapshot diff vs prior"
+    tool: local_seo_heatmaps
+    operations:
+      - op: list_available_snapshot_dates
+        params:
+          heatmap_id: "{{heatmap.id}}"
+    compute:
+      - avg_rank_current
+      - avg_rank_prior
+      - avg_rank_delta
+      - top_movers: "{{config.top_movers_count}}"
+    output: snapshot_delta
+    status: pending
+    depends_on: [2, 3]
+
+  - id: 5
+    name: "(Optional) Off-cycle refresh"
+    tool: local_seo_heatmaps
+    operations:
+      - op: get_heatmap_quota
+      - op: bulk_refresh_grids
+        params:
+          heatmap_ids: "{{heatmaps.ids}}"
+    condition: "{{config.off_cycle_refresh}}"
+    warn_threshold: 20
+    output: refresh_result
+    status: pending
+
+  - id: 6
+    name: "(Optional) Competitor comparison"
+    tool: local_seo_heatmaps
+    operations:
+      - op: single_competitor_versus_report
+        params:
+          business_id: "{{ids.business_id}}"
+          competitor_business_id: "{{competitor_id}}"   # iterate per competitor
+    condition: "{{config.competitor_report}}"
+    output: competitor_report
+    status: pending
+
+# ── Results ───────────────────────────────────────────────────────────────────
+results: []
+
+# ── Output Summary Template ────────────────────────────────────────────────────
+# ✅  {client} — Heatmap Snapshot · {period}
+#
+# 🗺️  Grid            {N} points · {keyword_count} keywords          View →
+# 📈  Avg rank        {current} ({±Δ} vs last snapshot)              View →
+# 🏆  Top movers      {keyword} ↑{N}, {keyword} ↓{N}                 View →
+# 🥊  Competitor      {name} avg rank {X} (you: {Y})                 View →   ← if requested
+# 🎫  Quota           {used}/{total} ({remaining} left)

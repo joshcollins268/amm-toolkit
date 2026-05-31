@@ -1,0 +1,167 @@
+# Workflow Template: Local SEO Heatmap Setup
+# Use to set up a new heatmap on a GBP location.
+# Copy to plans/clients/{client-slug}/{YYYY-MM}-heatmap-setup.yaml and fill in the variables.
+
+template: heatmap-setup
+version: "1.0"
+description: "New heatmap setup — pre-flight, quota check, keyword discovery + enrichment, grid preview, setup"
+
+# ── Client Info ───────────────────────────────────────────────────────────────
+client: ""
+domain: ""
+period: ""
+status: pending
+
+# ── IDs ───────────────────────────────────────────────────────────────────────
+ids:
+  business_id: ""                   # local_seo_heatmaps business id (int)
+  gbp_location_id: ""               # used if business needs to be created from GBP
+
+# ── Configuration ─────────────────────────────────────────────────────────────
+config:
+  grid_size: "7x7"                  # 3x3 | 5x5 | 7x7 | 9x9
+  radius_miles: 5                   # grid radius
+  keyword_count_target: 12          # recommended 10-15; hard cap 25
+  enrich_with_volume: true          # call se_lookup_keyword for volume/difficulty/intent
+  use_ai_fallback_if_pool_below: 15 # only call recommend_keywords if discovered pool is smaller
+  organic_keyword_sample: 50        # how many top organic keywords to consider
+
+# ── Steps ─────────────────────────────────────────────────────────────────────
+steps:
+  - id: 1
+    name: "Pre-flight: business + location"
+    tool: local_seo_heatmaps
+    operations:
+      - op: list_businesses
+        params:
+          search: "{{client}}"
+      - op: create_business
+        params:
+          gbp_location_id: "{{ids.gbp_location_id}}"
+        condition: "no_match"
+    halt_if: "address_is_null"
+    output: business_info
+    status: pending
+
+  - id: 2
+    name: "Quota check"
+    tool: local_seo_heatmaps
+    operations:
+      - op: get_heatmap_quota
+    warn_threshold: 20
+    output: quota_info
+    status: pending
+
+  - id: 3
+    name: "Discover existing keyword work"
+    parallel: true
+    operations:
+      - tool: local_seo_heatmaps
+        op: list_businesses_heatmaps
+        params:
+          business_id: "{{ids.business_id}}"
+      - tool: krt
+        op: list_projects
+        params:
+          domain: "{{domain}}"
+      - tool: krt
+        op: get_keywords_details
+        params:
+          project_id: "{{krt_project.id}}"   # iterate per matching project
+      - tool: se
+        op: list_keyword_research_projects
+        params:
+          domain: "{{domain}}"
+      - tool: se
+        op: get_keyword_research_details
+        params:
+          research_id: "{{research.id}}"     # iterate per matching project
+      - tool: se
+        op: get_organic_keywords
+        params:
+          domain: "{{domain}}"
+          limit: "{{config.organic_keyword_sample}}"
+    output: discovered_keyword_pool
+    status: pending
+
+  - id: 4
+    name: "AI fallback (only if pool is thin)"
+    tool: local_seo_heatmaps
+    operations:
+      - op: recommend_keywords
+        params:
+          business_id: "{{ids.business_id}}"
+    condition: "discovered_keyword_pool.unique_count < config.use_ai_fallback_if_pool_below"
+    output: ai_suggested_keywords
+    status: pending
+
+  - id: 5
+    name: "De-dupe + enrich with volume/difficulty/intent"
+    tool: se
+    operations:
+      - op: lookup_keyword
+        params:
+          keyword: "{{kw}}"                  # iterate per de-duped keyword
+    condition: "{{config.enrich_with_volume}}"
+    output: enriched_pool
+    status: pending
+    depends_on: [3, 4]
+
+  - id: 6
+    name: "Present ranked candidate pool (user selection)"
+    presentation:
+      sort_by: "relevance_score"             # volume × binary local-intent flag
+      group_by: "source"                     # tracked | ranking | research | ai
+      columns: [keyword, volume, difficulty, intent, source]
+    output: final_keyword_set
+    status: pending
+    depends_on: [5]
+
+  - id: 7
+    name: "Manual-add prompt"
+    user_prompt: "Anything missing that you know is relevant? (specialty terms, brand+service combos)"
+    output: final_keyword_set_with_manual
+    status: pending
+    depends_on: [6]
+
+  - id: 8
+    name: "Grid preview"
+    tool: local_seo_heatmaps
+    operations:
+      - op: preview_setup_heatmap
+        params:
+          business_id: "{{ids.business_id}}"
+          keywords: "{{final_keyword_set_with_manual}}"
+          grid_size: "{{config.grid_size}}"
+          radius_miles: "{{config.radius_miles}}"
+    confirm_before_next_step: true
+    output: grid_preview
+    status: pending
+    depends_on: [7]
+
+  - id: 9
+    name: "Setup heatmap"
+    tool: local_seo_heatmaps
+    operations:
+      - op: setup_heatmap
+        params:
+          business_id: "{{ids.business_id}}"
+          keywords: "{{final_keyword_set_with_manual}}"
+          grid_size: "{{config.grid_size}}"
+          radius_miles: "{{config.radius_miles}}"
+    output: heatmap_setup_result
+    status: pending
+    depends_on: [8]
+
+# ── Results ───────────────────────────────────────────────────────────────────
+results: []
+
+# ── Output Summary Template ────────────────────────────────────────────────────
+# ✅  {client} — Heatmap Setup
+#
+# 📍  Business        linked (id: {business_id})                    View →
+# 🔎  Discovered      {N} existing · {N} KRT · {N} organic · {N} AI
+# 🔑  Keywords        {N} tracked                                   View →
+# 🗺️  Grid            {grid_size} · {radius_miles}mi · {points} pts  View →
+# 📊  Baseline        captured · avg rank {X}                       View →
+# 🎫  Quota           {used}/{total} ({remaining} left)

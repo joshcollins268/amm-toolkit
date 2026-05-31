@@ -115,6 +115,22 @@ steps:
     depends_on: [3, 4, 5]
     condition: "{{config.deploy_after_changes}}"
 
+  - id: 7
+    name: "Heatmap presence check (read-only)"
+    tool: local_seo_heatmaps
+    operations:
+      - op: list_businesses
+        params:
+          search: "{{client}}"
+      - op: list_businesses_heatmaps
+        params:
+          business_id: "{{business.id}}"          # from prior op
+    output: heatmap_presence
+    # Surface as "gap — run /run-heatmaps" in the summary if no heatmap found.
+    # Do NOT trigger setup inline. Do NOT refresh.
+    status: pending
+    depends_on: [6]
+
 # ── Results ───────────────────────────────────────────────────────────────────
 results: []
 
@@ -127,5 +143,6 @@ results: []
 # 🛎️  Services        {N} services added/updated               View →
 # ✅  Attributes      {N} missing attributes added             View →
 # 📝  Description     AI description generated + deployed      View →
+# 🗺️  Heatmap         {existing | gap — run /run-heatmaps}     View →
 #
 # {total} actions completed · {failed} failed

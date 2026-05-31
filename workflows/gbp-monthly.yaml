@@ -107,6 +107,33 @@ steps:
     output: performance_summary
     status: pending
 
+  - id: 6
+    name: "Heatmap snapshot report (read-only — dashboard refreshes weekly)"
+    tool: local_seo_heatmaps
+    operations:
+      - op: list_businesses
+        params:
+          search: "{{client}}"
+      - op: list_businesses_heatmaps
+        params:
+          business_id: "{{business.id}}"
+      - op: get_heatmap_details
+        params:
+          heatmap_id: "{{heatmap.id}}"            # iterate
+      - op: get_rank
+        params:
+          heatmap_id: "{{heatmap.id}}"
+      - op: list_available_snapshot_dates
+        params:
+          heatmap_id: "{{heatmap.id}}"
+    compute:
+      - avg_rank_current
+      - avg_rank_delta
+      - top_movers
+    # Skip silently if no heatmap. Do NOT trigger bulk_refresh_grids — SA dashboard owns the schedule.
+    output: heatmap_snapshot
+    status: pending
+
 # ── Results ───────────────────────────────────────────────────────────────────
 results: []
 
@@ -117,5 +144,6 @@ results: []
 # 📢  Posts           {N} posts generated + published          View →
 # 🤖  Auto-posting    enabled · {frequency} schedule           View →
 # 📊  Performance     {impressions} views · {clicks} clicks    View →
+# 🗺️  Heatmap         avg rank {X} ({±Δ} vs last snapshot)     View →
 #
 # {total} actions completed · {failed} failed

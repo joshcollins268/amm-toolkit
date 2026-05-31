@@ -20,6 +20,7 @@ Load `workflows/gbp-optimization.yaml` and execute:
 5. **Add services** — `gbp_locations_services_crud` → add/update services with AI-generated descriptions
 6. **Add attributes** — `gbp_locations_attributes_crud` → fill in missing attributes
 7. **AI description + deploy** — `gbp_locations_deployment` → `suggest_description` then `deploy_location`
+8. **Heatmap presence check (read-only)** — `local_seo_heatmaps_list_businesses_heatmaps` filtered to this location. If a heatmap exists, note it for the monthly run. If missing, flag as a gap in the summary: "→ No local heatmap configured. Run `/run-heatmaps` to set one up." Do NOT prompt setup inline — keep this command focused on GBP.
 
 Ask the user for: GBP location ID (or help them find it via `list_locations`), primary category, additional categories, services to add.
 
@@ -32,6 +33,12 @@ Load `workflows/gbp-monthly.yaml` and execute:
 3. **Automated posting** — `gbp_posts_automation` → configure + enable automated posting
 4. **Publish posts** — `gbp_posts_crud` → `approve_post` + `publish_post` for pending posts
 5. **Performance summary** — `gbp_locations_crud` → `get_location_stats`
+6. **Heatmap snapshot report (read-only)** — for each heatmap tied to this location:
+   - `local_seo_heatmaps_get_heatmap_details` for current snapshot
+   - `local_seo_heatmaps_get_rank` for tracked keywords
+   - `local_seo_heatmaps_list_available_snapshot_dates` → diff current vs prior, compute avg rank delta + top movers
+
+   If no heatmap exists, skip silently and surface the gap in the summary. Do NOT trigger a refresh — SA dashboard's weekly cron is the source of truth.
 
 Ask the user for: GBP location ID, number of posts to generate (default: 8), post type, whether to enable auto-posting.
 
@@ -47,6 +54,7 @@ Ask the user for: GBP location ID, number of posts to generate (default: 8), pos
 🛎️ Services        {N} services added/updated              View →
 ✅ Attributes      {N} missing attributes added            View →
 📝 Description     AI description generated + deployed     View →
+🗺️ Heatmap         {existing | gap — run /run-heatmaps}    View →
 ```
 
 **Monthly:**
@@ -57,6 +65,7 @@ Ask the user for: GBP location ID, number of posts to generate (default: 8), pos
 📢 Posts           {N} posts generated + published         View →
 🤖 Auto-posting    enabled · {frequency}                   View →
 📊 Performance     {views} views · {clicks} clicks         View →
+🗺️ Heatmap         avg rank {X} ({±Δ} vs last snapshot)    View →
 ```
 
 ## Golden Rules
@@ -64,3 +73,4 @@ Ask the user for: GBP location ID, number of posts to generate (default: 8), pos
 - Always `load_location` first to sync the latest state from Google
 - Confirm before deploying changes — deployment pushes to Google
 - Skip DELETE-type recommendations — they should be reviewed manually
+- Heatmap touches here are read-only. Don't refresh from the toolkit on a schedule — SA dashboard's weekly cron is the source of truth. For setup, run `/run-heatmaps`.

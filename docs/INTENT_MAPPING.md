@@ -24,7 +24,7 @@
 | "GBP stats", "GBP performance", "profile analytics" | `gbp_locations_crud` (op: `get_location_stats`) | D (step 5) |
 | "PPC", "ads", "campaign", "Google Ads", "paid search" | `business_crud`, `product_crud`, `campaign` | **E — PPC Campaign Launch** |
 | "landing page", "website", "web page" | `website_studio_tools` | E (step 7, optional) |
-| "local SEO", "heatmap", "map pack", "local rankings" | `local_seo_*` | Standalone |
+| "local SEO", "heatmap", "map pack", "local rankings", "geo grid", "set up heatmap", "track local rankings" | `local_seo_heatmaps_*` | **`/run-heatmaps`** (setup or maintenance) |
 | "press release", "PR distribution" | `press_release_content`, `press_release_distribution` | **F — Authority Building** |
 | "cloud stack", "cloud network" | `cloud_stack_content`, `cloud_stack_distribution` | F (steps 3–4) |
 | "backlinks", "link building", "outreach", "digital PR" | `digital_pr_*`, `backlinks` | F (steps 5–6) |
@@ -117,5 +117,6 @@ When user intent spans multiple tools, chain workflows in this priority order:
 | "content" | "Do you mean creating new articles or optimizing existing ones?" | New → topical_maps + content_generation / Existing → article_management |
 | "set up GBP" | "Is this a first-time setup or monthly optimization?" | First time → C (full optimization) / Monthly → D (recurring) |
 | "campaign" | "PPC ads campaign or digital PR outreach campaign?" | PPC → E / Outreach → F |
+| "heatmap" | "New setup or just read the latest snapshot?" | New → `/run-heatmaps` setup / Read → `/run-heatmaps` maintenance (or `/run-gbp` monthly, which surfaces snapshot deltas as a side-effect) |
 | "report" | "SEO summary report or LLM visibility report?" | SEO → project_management export / LLM → G |
 | "issues" | "OTTO project issues or detailed SEO analysis?" | OTTO → project_management / Detailed → seo_analysis |
