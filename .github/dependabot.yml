@@ -1,0 +1,44 @@
+# Managed centrally. Monthly cadence + grouped minor/patch keeps version-update
+# noise low; SECURITY updates are separate and always immediate.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/mission-control/tools/command-center"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      pip-minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "pip"
+    directory: "/mission-control/tools/supervisor"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      pip-minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "pip"
+    directory: "/mission-control/tools/website-build"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      pip-minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "pip"
+    directory: "/mission-control/tools/website-rebuild"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      pip-minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "docker"
+    directory: "/Scripts"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      docker-minor-and-patch:
+        update-types: ["minor", "patch"]
