@@ -1,5 +1,6 @@
 # Managed centrally. Monthly cadence + grouped minor/patch keeps version-update
-# noise low; SECURITY updates are separate and always immediate.
+# noise low. Dependabot SECURITY updates are governed by repository settings,
+# not by this file.
 version: 2
 updates:
   - package-ecosystem: "pip"
