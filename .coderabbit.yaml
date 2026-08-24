@@ -37,6 +37,10 @@
 #
 # TRAPS, banked from the same incident
 # -------------------------------------
+#   * A COST DECISION HERE IS ALSO AN APPROVAL DECISION. On a repo with
+#     `required_approving_review_count: 1` and one human member, CodeRabbit is the only
+#     principal that can satisfy the gate. Never reason about the review budget without
+#     checking branch protection first — the first version of this file did exactly that.
 #   * CodeRabbit reads `.coderabbit.yaml` from the PR's HEAD BRANCH, not the default branch.
 #     An open PR keeps the old behaviour until it carries this change. A sweep that reads
 #     only default branches reports a repo fixed while its in-flight PRs still auto-review —
@@ -86,25 +90,67 @@ reviews:
 
   # BASELINE: auto_review.enabled + auto_review.auto_incremental_review
   #
-  # ON DEMAND, NOT ON EVERY PUSH.
+  # ONE REVIEW AT OPEN, NONE ON SUBSEQUENT PUSHES.
   #
-  # CodeRabbit bills per review. With both on, every intermediate commit on an open PR drew
-  # a billable review — see the incident at the top of this file. The house rule was already
-  # "CodeRabbit is the last reviewer, never the first": free reviewers (Codex, /code-review)
-  # see every head first, CodeRabbit confirms. That rule lived only in prose while the config
-  # said "review everything, always". The config is what actually decides, so the rule lives
-  # here now.
+  # THE FIRST VERSION OF THIS BASELINE SET `enabled: false` AND WAS WRONG. Recording why,
+  # because the reasoning that produced it was sound and still reached the wrong answer.
   #
-  # To request a review: comment `@coderabbitai full review` on the PR when it is genuinely
-  # ready. Bare `@coderabbitai review` is incremental-only and will not run.
+  # The cost analysis was right: CodeRabbit bills per review, and msm-clickup-broker#1 drew
+  # three billed reviews in one night on the way to the org hitting its spending cap. But the
+  # three were ONE AT OPEN PLUS TWO FROM FIX PUSHES. The burn is incremental review. The
+  # review at open is the one that pays for itself, and turning it off does not save a third
+  # of the cost — it costs the approval.
+  #
+  # MEASURED ON THIS ESTATE 2026-08-24, not assumed:
+  #   * 8 of 10 repos run `required_approving_review_count: 1` with `dismiss_stale_reviews`.
+  #   * The org has ONE human member, and GitHub does not let a PR author approve their own PR.
+  #   * Across the last 25 merged msm-infra PRs, EVERY approving review came from
+  #     coderabbitai[bot] — 7 of them, and zero from a human. CodeRabbit is not merely a
+  #     reviewer here; it is the only principal that can satisfy the gate.
+  #
+  # So `enabled: false` on a protected repo leaves exactly two ways to merge: request a review
+  # by hand on every head, or use the `enforce_admins: false` bypass. The second is what
+  # terraform/github/branch_protection.tf calls "the most load-bearing comment in this root",
+  # precisely because it must not become routine — and the same measurement shows 18 of those
+  # 25 PRs already merged with no approving review at all, so it is ALREADY closer to routine
+  # than anyone intended. A baseline that pushes it further is the wrong trade.
+  #
+  # `auto_incremental_review: false` is where the saving actually lives, and it is kept.
+  #
+  # The house rule stands unchanged: free reviewers (Codex, /code-review) see every head
+  # BEFORE CodeRabbit, which confirms. What changed is the mechanism — the one review at open
+  # is the confirmation, not a first pass, and pushing fixes after it costs nothing.
+  # Re-request explicitly with `@coderabbitai full review` when a head has moved materially.
   auto_review:
-    # Drafts are NOT auto-reviewed, which is what lets the review at open stay LAST:
-    # open as draft -> free reviewers (Codex, /code-review) see the head -> mark ready
-    # -> CodeRabbit reviews once, and that review is also the approving review branch
-    # protection needs. One billed review per PR, spent last.
-    drafts: false
     enabled: true
     auto_incremental_review: false
+
+    # BASELINE: auto_review.drafts
+    #
+    # THIS KEY IS WHAT MAKES `enabled: true` COMPATIBLE WITH THE HOUSE RULE, and it is the
+    # piece the first two versions of this baseline both missed.
+    #
+    # The rule is "CodeRabbit is the last reviewer, never the first": free reviewers (Codex,
+    # /code-review) see every head BEFORE the paid one confirms. But `enabled: true` reviews
+    # a PR THE MOMENT IT OPENS, which makes CodeRabbit the FIRST reviewer again — the exact
+    # thing the rule forbids. The two requirements look irreconcilable: the review at open is
+    # also the only thing that can approve a PR on a protected repo.
+    #
+    # Drafts resolve it. With this false, a DRAFT PR is not auto-reviewed. So:
+    #
+    #     1. Open the PR AS A DRAFT.
+    #     2. Free reviewers see the head — Codex, /code-review, /security-review.
+    #     3. Mark it ready for review.
+    #     4. CodeRabbit reviews ONCE, on a head the free reviewers have already been over,
+    #        and that single review is also the approving review the branch protection needs.
+    #
+    # One billed review per PR, spent LAST, and it satisfies the approval gate. That is both
+    # constraints met rather than one traded against the other.
+    #
+    # Set explicitly even though false is the schema default, for the same reason `profile`
+    # is: this file outranks the Organization UI, and a default that the whole workflow
+    # depends on should not be inherited silently.
+    drafts: false
 
     # NOT ASSERTED by check-repo-baseline.py — set here so a new repo starts sane, but
     # deliberately not enforced across the estate. With `enabled: false` above there is no
