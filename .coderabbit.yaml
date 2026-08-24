@@ -98,7 +98,7 @@ reviews:
   # To request a review: comment `@coderabbitai full review` on the PR when it is genuinely
   # ready. Bare `@coderabbitai review` is incremental-only and will not run.
   auto_review:
-    enabled: false
+    enabled: true
     auto_incremental_review: false
 
     # NOT ASSERTED by check-repo-baseline.py — set here so a new repo starts sane, but
