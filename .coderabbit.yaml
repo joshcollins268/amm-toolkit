@@ -1,0 +1,148 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+#
+# THE CANONICAL CODERABBIT BASELINE — every repo in the estate, both owners.
+#
+# This file is the SINGLE SOURCE OF TRUTH, and it has exactly two consumers:
+#   * `scripts/apply-repo-baseline.py`  WRITES this content into a repo that has no config.
+#   * `scripts/check-repo-baseline.py`  ASSERTS the values below are what each repo carries.
+#
+# Two copies of a rule are two rules, so neither script restates the values — they read them
+# from here. Change a baseline value HERE and both the writer and the detector move together.
+#
+# WHAT THE DETECTOR ACTUALLY ASSERTS, AND WHY IT IS NOT BYTE EQUALITY
+# -------------------------------------------------------------------
+# Repos legitimately differ: msm-infra carries `path_instructions` about Terraform and IAM
+# that would be noise in `daily-wallpaper`. Demanding byte equality would either erase that
+# guidance or force it everywhere, and a detector whose green requires deleting real value
+# gets switched off. So the file splits in two:
+#
+#   * THE BASELINE BLOCK (everything below marked `# BASELINE:`) — identical everywhere,
+#     and the only thing check-repo-baseline.py asserts.
+#   * REPO-SPECIFIC GUIDANCE (`path_instructions`, prose about what the repo is) — absent
+#     here on purpose. A repo that has it keeps it; a new repo starts without it.
+#
+# WHY THIS FILE EXISTS AT ALL — the incident, banked so it is not re-derived
+# --------------------------------------------------------------------------
+# `msm-clickup-broker` was created 2026-08-24 at ~00:00 CDT and shipped a PR the same night
+# with no `.coderabbit.yaml`. CodeRabbit therefore auto-reviewed every push: three billed
+# reviews on one PR in one night, contributing to the org hitting its usage spending cap by
+# morning. The cap then blocked the review that was actually needed on msm-infra#50 and left
+# a GREEN CodeRabbit check sitting over a review that never ran.
+#
+# The conventions were all written down. The repo was created by an agent that had read them.
+# That is the point: REMEMBERING IS NOT A MECHANISM. The rule "CodeRabbit is the last
+# reviewer, never the first" lived in prose and in a PreToolUse hook on Bash — while the
+# behaviour was decided by a YAML file nobody re-read. A hook cannot catch a missing file,
+# because an absence emits no event.
+#
+# TRAPS, banked from the same incident
+# -------------------------------------
+#   * CodeRabbit reads `.coderabbit.yaml` from the PR's HEAD BRANCH, not the default branch.
+#     An open PR keeps the old behaviour until it carries this change. A sweep that reads
+#     only default branches reports a repo fixed while its in-flight PRs still auto-review —
+#     which is why check-repo-baseline.py also walks open PR heads.
+#   * `inheritance` DEFAULTS TO FALSE and the chain stops at the first level where it is
+#     false or unset, so a repo-level `true` alone does not pull org values down. Adding a
+#     repo YAML also promotes it to priority 2, ABOVE the Organization UI (priority 5), so
+#     unset keys silently collapse to schema defaults. That is why every value below is set
+#     explicitly rather than left to the dashboard.
+#   * `@coderabbitai review` is INCREMENTAL-ONLY. With auto-review off there is never a
+#     prior review to be incremental against, and a bare `review` has been observed
+#     answering "no files to review" in a reply that reads affirmative. Ask for
+#     `@coderabbitai full review`, alone in its own comment.
+#
+# Provenance: adopted estate-wide from the msm-infra config reasoned out on PR #51
+# (`chore/coderabbit-on-demand`). Tracker: msm-infra#52.
+
+language: en-US
+
+# BASELINE: inheritance
+#
+# Explicit because the default is false and the chain stops at the first level that does not
+# set it. See the trap above — a repo-level YAML also outranks the Organization UI, so
+# nothing here may rely on a dashboard value.
+inheritance: true
+
+reviews:
+  # BASELINE: profile
+  #
+  # Set EXPLICITLY. `profile` defaults to `chill`, and relying on the dashboard failed
+  # silently once already: on 2026-08-10 every repo in the estate measured CHILL while
+  # reading as configured.
+  profile: assertive
+
+  # BASELINE: request_changes_workflow
+  #
+  # Without this CodeRabbit can only COMMENT, never APPROVE — and a repo whose branch
+  # protection requires one approving review then has no satisfiable path except an admin
+  # override, which is a control that trains you to bypass it.
+  request_changes_workflow: true
+
+  # BASELINE: review_status
+  #
+  # Announces a SKIPPED review. A silently skipped review is indistinguishable from a clean
+  # one, which is the exact failure class this whole baseline exists to detect.
+  review_status: true
+
+  # BASELINE: auto_review.enabled + auto_review.auto_incremental_review
+  #
+  # ON DEMAND, NOT ON EVERY PUSH.
+  #
+  # CodeRabbit bills per review. With both on, every intermediate commit on an open PR drew
+  # a billable review — see the incident at the top of this file. The house rule was already
+  # "CodeRabbit is the last reviewer, never the first": free reviewers (Codex, /code-review)
+  # see every head first, CodeRabbit confirms. That rule lived only in prose while the config
+  # said "review everything, always". The config is what actually decides, so the rule lives
+  # here now.
+  #
+  # To request a review: comment `@coderabbitai full review` on the PR when it is genuinely
+  # ready. Bare `@coderabbitai review` is incremental-only and will not run.
+  auto_review:
+    enabled: false
+    auto_incremental_review: false
+
+    # NOT ASSERTED by check-repo-baseline.py — set here so a new repo starts sane, but
+    # deliberately not enforced across the estate. With `enabled: false` above there is no
+    # auto review to pause, so this key decides nothing, and two repos had reasoned their way
+    # to opposite values in their own comments. Forcing one would leave the other carrying a
+    # comment arguing against its own setting. See check-repo-baseline.py's
+    # `baseline_expectations()` for the full note.
+    #
+    # LOW, not 0. The counter is per-PR while the review allowance is per-DEVELOPER and
+    # shared across every open PR, so a per-PR bound does not bound aggregate use.
+    #
+    # THE RESUME STEP IS NOT OPTIONAL, and this bit us on msm-skills#69 on 2026-08-11. Once
+    # paused, later pushes do NOT re-review — so if the last review was `CHANGES_REQUESTED`,
+    # the PR stays blocked no matter what you push, because the blocking review is never
+    # superseded. Comment `@coderabbitai review` to resume (or `full review` when the only
+    # change was to this file, since an incremental review answers "no files to review" and
+    # never runs). Each costs one of the hourly allowance.
+    auto_pause_after_reviewed_commits: 2
+
+  # Walkthrough content nobody reads, all default ON and all costing review time.
+  # `review_status` is KEPT above deliberately — it is the signal that a review was skipped.
+  sequence_diagrams: false
+  changed_files_summary: false
+  related_issues: false # issues live in ClickUp, not GitHub
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false # solo operator
+  estimate_code_review_effort: false
+  assess_linked_issues: false
+
+  # No `tools:` block on purpose — every analyzer defaults to enabled. Hand-classifying which
+  # ones "apply" is how msm-skills once disabled the security scanner for the file type it
+  # holds most of.
+
+# BASELINE: knowledge_base.{learnings,issues,pull_requests}.scope
+#
+# All three pinned to `local`. The default is `auto`, which resolves to GLOBAL context on
+# PRIVATE repositories — and most of this estate is private. `auto` would widen the review
+# context beyond the repo by default, which is a data-boundary decision made by a default.
+knowledge_base:
+  learnings:
+    scope: local
+  issues:
+    scope: local
+  pull_requests:
+    scope: local
