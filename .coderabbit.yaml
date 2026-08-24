@@ -58,6 +58,27 @@
 # Provenance: adopted estate-wide from the msm-infra config reasoned out on PR #51
 # (`chore/coderabbit-on-demand`). Tracker: msm-infra#52.
 
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# MSM CODERABBIT BASELINE — REGION 1 of 2. DO NOT EDIT BETWEEN THE MARKERS.
+#
+# Everything between this line and END REGION 1 is IDENTICAL IN EVERY REPOSITORY in the
+# estate, byte for byte, and `scripts/check-repo-baseline.py` asserts exactly that. Edit it
+# in ONE place — `scripts/coderabbit-baseline.yaml` in Main-Street-Mentor/msm-infra — and
+# `scripts/apply-repo-baseline.py` propagates it everywhere.
+#
+# WHY THE BLOCK IS ASSERTED AND NOT JUST THE VALUES. On 2026-08-24 the baseline's
+# `auto_review.enabled` was corrected from false to true. The writer patches VALUES and not
+# prose, deliberately, so repo-specific guidance survives — and fourteen repositories ended
+# up holding the RIGHT value under a comment block still arguing for the WRONG one. The
+# sweep could not see it, because it asserted values and not reasoning. A config whose
+# comments contradict its own setting is the exact defect this estate exists to remove, so
+# the reasoning is now part of what gets enforced.
+#
+# WHAT IS *NOT* IN HERE, on purpose: `path_instructions` and `path_filters`. Those are
+# written for a specific codebase and belong to it — they live BETWEEN the two regions and
+# nothing here touches them. Uniformity where uniformity is correct; local knowledge kept
+# local.
+# ═══════════════════════════════════════════════════════════════════════════════════════
 language: en-US
 
 # BASELINE: inheritance
@@ -185,6 +206,22 @@ reviews:
   # ones "apply" is how msm-skills once disabled the security scanner for the file type it
   # holds most of.
 
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# END MSM CODERABBIT BASELINE REGION 1
+#
+# Below, and until REGION 2 begins, is this repository's OWN review guidance — the
+# `path_instructions` and `path_filters` written for this codebase. Add to it freely; the
+# baseline sweep does not police it, and the writer never rewrites it.
+#
+# It has to sit here rather than after REGION 2 because `path_instructions` is nested under
+# `reviews:`, and YAML permits a mapping key exactly once — so the baseline cannot be one
+# contiguous run without either swallowing this guidance or splitting the `reviews:` block.
+# Two regions is the honest shape of that constraint rather than a workaround for it.
+# ═══════════════════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# MSM CODERABBIT BASELINE — REGION 2 of 2. DO NOT EDIT BETWEEN THE MARKERS.
+# ═══════════════════════════════════════════════════════════════════════════════════════
 # BASELINE: knowledge_base.{learnings,issues,pull_requests}.scope
 #
 # All three pinned to `local`. The default is `auto`, which resolves to GLOBAL context on
@@ -197,3 +234,6 @@ knowledge_base:
     scope: local
   pull_requests:
     scope: local
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# END MSM CODERABBIT BASELINE REGION 2
+# ═══════════════════════════════════════════════════════════════════════════════════════
