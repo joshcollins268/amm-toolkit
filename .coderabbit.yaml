@@ -98,6 +98,8 @@ reviews:
   # To request a review: comment `@coderabbitai full review` on the PR when it is genuinely
   # ready. Bare `@coderabbitai review` is incremental-only and will not run.
   auto_review:
+    # Baseline value.
+    drafts: false
     enabled: true
     auto_incremental_review: false
 
