@@ -98,7 +98,10 @@ reviews:
   # To request a review: comment `@coderabbitai full review` on the PR when it is genuinely
   # ready. Bare `@coderabbitai review` is incremental-only and will not run.
   auto_review:
-    # Baseline value.
+    # Drafts are NOT auto-reviewed, which is what lets the review at open stay LAST:
+    # open as draft -> free reviewers (Codex, /code-review) see the head -> mark ready
+    # -> CodeRabbit reviews once, and that review is also the approving review branch
+    # protection needs. One billed review per PR, spent last.
     drafts: false
     enabled: true
     auto_incremental_review: false
