@@ -173,12 +173,16 @@ reviews:
     # depends on should not be inherited silently.
     drafts: false
 
-    # NOT ASSERTED by check-repo-baseline.py — set here so a new repo starts sane, but
-    # deliberately not enforced across the estate. With `enabled: false` above there is no
-    # auto review to pause, so this key decides nothing, and two repos had reasoned their way
-    # to opposite values in their own comments. Forcing one would leave the other carrying a
-    # comment arguing against its own setting. See check-repo-baseline.py's
-    # `baseline_expectations()` for the full note.
+    # BASELINE: auto_pause_after_reviewed_commits
+    #
+    # Asserted like every other value here. It was exempt for a while, because two repos
+    # had reasoned to opposite values in their own comments and forcing one would have left
+    # the other arguing against its own setting — a concern the canonical regions remove,
+    # since the comment and the value now travel together from this file.
+    #
+    # It is inert either way: with `auto_incremental_review: false` above, no incremental
+    # review ever starts, so there is nothing to pause. The value below is the one to hold
+    # if that ever changes.
     #
     # LOW, not 0. The counter is per-PR while the review allowance is per-DEVELOPER and
     # shared across every open PR, so a per-PR bound does not bound aggregate use.
