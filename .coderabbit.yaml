@@ -98,10 +98,30 @@ reviews:
 
   # BASELINE: request_changes_workflow
   #
-  # Without this CodeRabbit can only COMMENT, never APPROVE — and a repo whose branch
-  # protection requires one approving review then has no satisfiable path except an admin
-  # override, which is a control that trains you to bypass it.
-  request_changes_workflow: true
+  # FALSE, AS OF 2026-09-22 — Josh's decision ("yes on coderabbit being advisory"), design:
+  # _brain/designs/2026-09-22-coderabbit-advisory-not-gate.md. This value used to be
+  # `true`, argued for by the paragraph this replaces: without it CodeRabbit could only
+  # COMMENT, never APPROVE, and a repo requiring one approving review had no satisfiable
+  # path except an admin override. That reasoning does not survive contact with this file's
+  # own warning two paragraphs up — "a config whose comments contradict its own setting is
+  # the exact defect this estate exists to remove" — once `terraform/github/
+  # branch_protection.tf` moved `required_approving_review_count` to 0. There is no
+  # approval left for CodeRabbit to satisfy, so `request_changes_workflow: true` would keep
+  # arguing for a gate that no longer exists.
+  #
+  # The real reason it flips, not just the trigger: CodeRabbit was the ONLY principal that
+  # could ever satisfy a 1-approval gate on a one-human org — nobody can approve their own
+  # PR — which made it a single point of failure wearing the shape of a second reviewer. It
+  # is billed, rate-limited, and re-reviews only on request, so its stale CHANGES_REQUESTED
+  # repeatedly stranded finished work, including the PR fixing that exact problem
+  # (claude-config#78). An advisory bot must not be able to strand a PR by construction,
+  # not by discipline — `request_changes_workflow: false` makes CodeRabbit COMMENT-only,
+  # so it can never hold a merge open on its own. The gate is now `required_contexts`
+  # (computed, not resolvable by the PR author) plus the free-review-first rule, which is
+  # unchanged and stays enforced by ~/.claude tooling — `coderabbit-cost-guard` and
+  # `unblock-pr.sh`'s evidence gate — never by this file. CodeRabbit still reviews; it
+  # advises.
+  request_changes_workflow: false
 
   # BASELINE: review_status
   #
@@ -162,11 +182,12 @@ reviews:
     #     1. Open the PR AS A DRAFT.
     #     2. Free reviewers see the head — Codex, /code-review, /security-review.
     #     3. Mark it ready for review.
-    #     4. CodeRabbit reviews ONCE, on a head the free reviewers have already been over,
-    #        and that single review is also the approving review the branch protection needs.
+    #     4. CodeRabbit reviews ONCE, on a head the free reviewers have already been over.
     #
-    # One billed review per PR, spent LAST, and it satisfies the approval gate. That is both
-    # constraints met rather than one traded against the other.
+    # One billed review per PR, spent LAST. Until 2026-09-22 that single review was ALSO the
+    # approving review branch protection required, which is exactly why a rate-limited bot
+    # could strand finished work; approvals no longer gate (required_approving_review_count
+    # is 0 in terraform/github), so this review is advice on the head and nothing more.
     #
     # Set explicitly even though false is the schema default, for the same reason `profile`
     # is: this file outranks the Organization UI, and a default that the whole workflow
